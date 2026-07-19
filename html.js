@@ -230,11 +230,17 @@ body.desk #boardStage{
 }
 /* metade da tela para os painéis: com menos que isso a tabela da Bolsa
    fica cortada e os nomes dos jogadores quebram em três linhas */
+/* duas colunas em cima e uma faixa larga embaixo, onde as Tabelas cabem
+   inteiras — na coluna estreita a da Bolsa ficava cortada na cotação 9 */
 body.desk #side{
-  display:flex;flex-direction:row;gap:14px;flex:1 1 auto;min-width:0;
+  display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-content:start;
+  flex:1 1 auto;min-width:0;
   overflow:auto;-webkit-overflow-scrolling:touch;padding:0;background:none;border:0;
 }
-body.desk #colA, body.desk #colB{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
+body.desk #colA{grid-column:1}
+body.desk #colB{grid-column:2}
+body.desk #pTabelas{grid-column:1 / -1}
+body.desk #colA, body.desk #colB{display:flex;flex-direction:column;min-width:0}
 body.desk #side .view{position:static;display:none;overflow:visible;padding:0;inset:auto}
 body.desk #side .view.on{display:block}
 body.desk .panel{margin-bottom:14px;padding:15px 17px}
@@ -611,7 +617,7 @@ function montaDesk() {
   b.appendChild($('viewPlayers'));
   b.appendChild($('viewBiz'));
   b.appendChild($('viewHelp'));
-  b.appendChild($('pTabelas'));
+  $('side').appendChild($('pTabelas'));   // faixa larga embaixo, sob as duas colunas
   $('pTurno').appendChild($('dicebox'));
   $('topBar').appendChild($('btnForce'));
   $('topBar').appendChild($('btnLeave'));
