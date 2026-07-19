@@ -199,12 +199,83 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation}
 #waiting{position:fixed;left:10px;right:10px;bottom:calc(var(--tabbar) + var(--actionbar) + 10px);z-index:40;
   background:#12293fe8;color:#cfe0ee;font-size:11.5px;padding:7px 11px;border-radius:20px;text-align:center;display:none}
 
+/* ---------- BOTÃO DE TROCAR DE VERSÃO ---------- */
+#btnModo{
+  flex:0 0 auto;background:#ffffff1f;border:1px solid #ffffff2e;color:#cfe0ee;
+  width:34px;height:34px;border-radius:8px;font-size:15px;line-height:1;padding:0;
+}
+#btnModo:active{background:#ffffff33}
+
+/* ---------- CELULAR: os painéis são abas sobrepostas ---------- */
+#side, #colA, #colB{display:contents}
+#deskTabs, #subtitulo{display:none}
+
+/* ---------- COMPUTADOR: tabuleiro à esquerda, dois painéis à direita ---------- */
+body.desk{max-width:none;background:#20486e linear-gradient(160deg,#2a5a87 0%,#1c3f63 55%,#152f4c 100%)}
+body.desk .top{height:auto;min-height:58px;padding:9px 18px;gap:16px;background:#0000001f;border-bottom:0}
+body.desk .brand .logo{font-size:34px}
+body.desk #subtitulo{
+  display:block;flex:1;color:#bcd3e4;font-size:11px;letter-spacing:2.6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+body.desk #topInfo{flex:0 0 auto;text-align:right}
+body.desk .tabbar, body.desk .actionbar{display:none}
+
+body.desk .stage{display:flex;flex-direction:row;gap:14px;padding:14px;overflow:hidden}
+body.desk #boardStage{
+  position:relative;flex:1 1 auto;min-width:0;border:3px solid #17130d;border-radius:6px;
+  box-shadow:0 8px 26px #0007;
+}
+body.desk #side{
+  display:flex;flex-direction:row;gap:12px;flex:0 0 clamp(520px,40vw,880px);
+  overflow:auto;-webkit-overflow-scrolling:touch;padding:0;background:none;border:0;
+}
+body.desk #colA, body.desk #colB{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
+body.desk #side .view{position:static;display:none;overflow:visible;padding:0;inset:auto}
+body.desk #side .view.on{display:block}
+body.desk .panel{margin-bottom:12px}
+body.desk .footer{display:none}
+body.desk .badge{display:none !important}
+body.desk .log{height:clamp(230px,34vh,430px);min-height:0}
+body.desk #waiting{bottom:14px;left:auto;right:14px;width:auto}
+
+/* as três abas do cartão da direita, como no tabuleiro de mesa */
+body.desk #deskTabs{display:flex;gap:6px;margin-bottom:10px;flex:0 0 auto}
+body.desk #deskTabs button{
+  flex:0 0 auto;background:#8d8776;color:#fff;font-weight:800;font-size:12.5px;letter-spacing:.6px;
+  padding:9px 15px;border-radius:4px 4px 0 0;box-shadow:0 3px 0 #00000033;
+}
+body.desk #deskTabs button.on{background:var(--blue-dk);box-shadow:0 3px 0 #0d4658}
+
+/* os dados moram dentro do painel Turno, e não numa barra embaixo */
+body.desk #pTurno .dicebox{
+  margin-top:12px;background:#00000008;border:1px solid #00000020;cursor:default;
+  padding:10px;border-radius:6px;
+}
+body.desk #pTurno .dicebox .dicelabel{color:#6b6350;font-size:11px;letter-spacing:2.4px}
+body.desk .top .btn{min-height:36px;font-size:11.5px;padding:0 12px;line-height:1.15;flex:0 0 auto}
+
+/* entrada e lobby no computador: sem a moldura de celular, com o cartão
+   maior e o logo do tamanho da tela */
+body.desk #gate{gap:20px;padding:32px}
+body.desk #gate .logoBig{font-size:78px;letter-spacing:-5px}
+body.desk #gate .sub{font-size:13px;letter-spacing:4px}
+body.desk .card{max-width:520px;padding:22px 24px;border-radius:6px;box-shadow:0 0 0 4px var(--gold),0 22px 60px #000a}
+body.desk .card h1{font-size:25px}
+body.desk .card p{font-size:14px}
+body.desk .codeBig{font-size:46px;letter-spacing:12px}
+body.desk .lobbyRow{font-size:15px;padding:10px 12px}
+
 @media(min-width:900px){
-  body{max-width:560px;margin:0 auto;border-left:1px solid #ffffff14;border-right:1px solid #ffffff14}
+  body:not(.desk){max-width:560px;margin:0 auto;border-left:1px solid #ffffff14;border-right:1px solid #ffffff14}
   .overlay{align-items:center;justify-content:center;padding:16px}
   .sheet{max-width:640px;border-radius:6px;border:4px solid #17130d;box-shadow:0 0 0 4px var(--gold),0 22px 60px #000;max-height:92dvh}
   .choices{flex-direction:row;flex-wrap:wrap}
   .choices .btn{flex:1 1 220px}
+}
+@media(min-width:1100px){
+  body.desk .players{grid-template-columns:1fr 1fr}
+  body.desk .bizlist{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -248,8 +319,10 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation}
 <!-- ===================== JOGO ===================== -->
 <header class="top hidden" id="topBar">
   <div class="brand"><span class="logo">status</span></div>
+  <div id="subtitulo">O JOGO DA ASCENSÃO SOCIAL · GROW 1977 · VERSÃO DIGITAL</div>
   <div id="topInfo"><b>Conectando…</b><span>o jogo da ascensão social</span></div>
   <div id="topCash"></div>
+  <button id="btnModo" title="Trocar entre a tela de celular e a de computador">🖥</button>
 </header>
 
 <div class="stage hidden" id="stage">
@@ -265,8 +338,15 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation}
     <div id="spacecard" class="spacecard" style="display:none"></div>
   </section>
 
+  <div id="side">
+  <div id="colA"></div>
+  <div id="colB"><div id="deskTabs">
+    <button data-dk="viewPlayers" class="on">Jogadores</button>
+    <button data-dk="viewBiz">Comércios</button>
+    <button data-dk="viewHelp">Ajuda</button>
+  </div></div>
   <section id="viewPlayers" class="view pad">
-    <section class="panel"><h2>Turno</h2><div class="turno" id="turno">…</div></section>
+    <section class="panel" id="pTurno"><h2>Turno</h2><div class="turno" id="turno">…</div></section>
     <section class="panel"><h2>Jogadores</h2><div class="players" id="playersBox"></div></section>
     <div class="footer">Recriação digital para uso pessoal, baseada no manual original e em fotografias do tabuleiro da Grow (1977).</div>
   </section>
@@ -282,8 +362,9 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation}
 
   <section id="viewHelp" class="view pad">
     <section class="panel"><h2>Regras</h2><div class="help" id="helpBox"></div></section>
-    <section class="panel"><h2>Tabelas</h2><div class="help tablescroll" id="tablesBox"></div></section>
+    <section class="panel" id="pTabelas"><h2>Tabelas</h2><div class="help tablescroll" id="tablesBox"></div></section>
   </section>
+  </div>
 </div>
 
 <div class="actionbar hidden" id="actionBar">
@@ -292,7 +373,7 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation}
     <div class="die" id="die2"></div>
     <div class="dicelabel" id="diceLabel">dados</div>
   </div>
-  <button class="btn plain" id="btnForce">Seguir sem<br>quem falta</button>
+  <button class="btn plain" id="btnForce">Seguir sem quem falta</button>
   <button class="btn plain" id="btnLeave">Sair</button>
 </div>
 
@@ -429,7 +510,10 @@ function onState(m) {
 function showGame() {
   $('gate').classList.add('hidden');
   ['topBar', 'stage', 'actionBar', 'tabbar'].forEach(function (id) { $(id).classList.remove('hidden'); });
-  if (!showGame.done) { showGame.done = true; setTimeout(function () { fit(); }, 60); }
+  if (!showGame.done) {
+    showGame.done = true;
+    requestAnimationFrame(function () { fit(); centerOnActive(true); });
+  }
 }
 
 /* ---------------- lobby ---------------- */
@@ -478,6 +562,86 @@ function sair(confirmar) {
 $('btnLeave').onclick = function () { sair(true); };
 $('btnSairLobby').onclick = function () { sair(false); };
 $('btnForce').onclick = function () { sendHost('force'); };
+
+/* ---------------- versão de celular x de computador ----------------
+   Escolhe sozinha pelo tamanho da tela na primeira visita; o botão do
+   cabeçalho troca a qualquer momento e a escolha fica gravada no aparelho. */
+var DESK = false, deskTab = 'viewPlayers', ORIG = null;
+
+function lerModo() {
+  try { return localStorage.getItem('statusModo'); } catch (e) { return null; }
+}
+
+/* Guarda, uma única vez, quem era filho de quem no HTML original.
+   Assim a volta para o celular é exata, sem depender de eu lembrar
+   de desfazer cada movimento na mão. */
+function guardaOriginal() {
+  if (ORIG) return;
+  ORIG = ['viewPlayers', 'viewHelp', 'actionBar', 'side', 'colB', 'topBar'].map(function (id) {
+    return { el: $(id), filhos: Array.prototype.slice.call($(id).children) };
+  });
+}
+function restauraOriginal() {
+  ORIG.forEach(function (o) { o.filhos.forEach(function (f) { o.el.appendChild(f); }); });
+}
+
+/* Arranjo de computador: tabuleiro à esquerda; à direita, Turno (com os dados
+   dentro) e Registro numa coluna, e o cartão de abas mais as Tabelas na outra. */
+function montaDesk() {
+  var a = $('colA'), b = $('colB');
+  a.appendChild($('pTurno'));
+  a.appendChild($('viewLog'));
+  b.appendChild($('deskTabs'));
+  b.appendChild($('viewPlayers'));
+  b.appendChild($('viewBiz'));
+  b.appendChild($('viewHelp'));
+  b.appendChild($('pTabelas'));
+  $('pTurno').appendChild($('dicebox'));
+  $('topBar').appendChild($('btnForce'));
+  $('topBar').appendChild($('btnLeave'));
+  $('boardStage').classList.add('on');
+  $('viewLog').classList.add('on');
+  setDeskTab(deskTab);
+}
+
+function setDeskTab(id) {
+  deskTab = id;
+  ['viewPlayers', 'viewBiz', 'viewHelp'].forEach(function (v) { $(v).classList.toggle('on', v === id); });
+  Array.prototype.forEach.call($('deskTabs').children, function (b) { b.classList.toggle('on', b.dataset.dk === id); });
+}
+Array.prototype.forEach.call($('deskTabs').children, function (b) {
+  b.onclick = function () { setDeskTab(b.dataset.dk); };
+});
+
+/* Decide sozinho na primeira visita. Largura de janela era um critério ruim:
+   quem não usa o navegador maximizado caía na tela de celular. Ter mouse é a
+   pergunta certa — só peço uma largura mínima para as duas colunas caberem. */
+function detectaDesk() {
+  var mouse = false;
+  try { mouse = window.matchMedia('(pointer: fine)').matches; } catch (e) {}
+  if (mouse && window.innerWidth >= 860) return true;
+  return window.innerWidth >= 1000;
+}
+
+function setModo(desk, gravar) {
+  guardaOriginal();
+  DESK = !!desk;
+  document.body.classList.toggle('desk', DESK);
+  $('btnModo').textContent = DESK ? '📱' : '🖥';
+  $('btnModo').title = DESK ? 'Mudar para a tela de celular' : 'Mudar para a tela de computador';
+  restauraOriginal();
+  if (DESK) {
+    currentView = 'boardStage';   // o tabuleiro nunca sai da tela no computador
+    montaDesk();
+  } else {
+    Array.prototype.forEach.call(document.querySelectorAll('.view'), function (v) {
+      v.classList.toggle('on', v.id === currentView);
+    });
+  }
+  if (gravar) { try { localStorage.setItem('statusModo', DESK ? 'desk' : 'mob'); } catch (e) {} }
+  requestAnimationFrame(function () { fit(); centerOnActive(true); });
+}
+$('btnModo').onclick = function () { buzz(10); setModo(!DESK, true); };
 
 /* ---------------- perguntas do servidor ---------------- */
 function renderPrompt(q) {
@@ -957,6 +1121,7 @@ function tapSpace(path) {
 /* ---------------- abas ---------------- */
 Array.prototype.forEach.call(document.querySelectorAll('#tabbar button'), function (b) {
   b.onclick = function () {
+    if (DESK) return;      // no computador tudo já está na tela
     buzz(8);
     currentView = b.dataset.view;
     Array.prototype.forEach.call(document.querySelectorAll('.view'), function (v) { v.classList.toggle('on', v.id === currentView); });
@@ -985,6 +1150,14 @@ var HELP_TABELAS = ${JSON.stringify(`<b>Bolsa de Valores</b> (investimento entra
 <tr><th>Paga</th><td>40/20/10</td><td>20/10/5</td><td>12/7/4</td><td>10/5/3</td><td>7/4/2</td><td>6/3/1</td></tr></table>
 <b>Grande Prêmio:</b> dobradinha $100 · soma par $20 · ímpar $5.<br>
 <b>Impostos:</b> dados × 1 (baixa), × 10 (média), × 100 (alta).`)};
+
+/* A escolha da versão vale desde a tela de entrada, não só depois de sentar
+   à mesa — senão o cartão de entrada fica espremido numa faixa de celular
+   no meio do monitor, com a moldura sobrando dos lados. */
+(function iniciaModo() {
+  var salvo = lerModo();
+  setModo(salvo ? salvo === 'desk' : detectaDesk(), false);
+})();
 
 document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
 document.addEventListener('dblclick', function (e) { e.preventDefault(); });

@@ -404,6 +404,8 @@ export class GameRoom {
     return p.cash >= this.S.target && p.debt === 0 && p.symbols.filter((s) => s.level === 2).length >= 3;
   }
   credName(pid) { return pid == null ? 'o Banco' : (this.byPid(pid) || { name: '?' }).name; }
+  /* "ao Banco", mas "a Fulano" — a crase só existe com o artigo do Banco */
+  credPara(pid) { return pid == null ? 'ao Banco' : 'a ' + this.credName(pid); }
   transfer(p, amount, creditorPid) {
     p.cash -= amount;
     if (creditorPid != null) { const c = this.byPid(creditorPid); if (c) c.cash += amount; }
@@ -439,7 +441,7 @@ export class GameRoom {
     }
     p._skipAsset = {};
     this.transfer(p, amount, creditorPid);
-    this.log(`${p.name} pagou ${fmt(amount)} (${desc}) a ${this.credName(creditorPid)}.`);
+    this.log(`${p.name} pagou ${fmt(amount)} (${desc}) ${this.credPara(creditorPid)}.`);
     return true;
   }
 
