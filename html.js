@@ -243,7 +243,7 @@ body.desk #pTabelas{grid-column:1 / -1}
 body.desk #colA, body.desk #colB{display:flex;flex-direction:column;min-width:0}
 body.desk #side .view{position:static;display:none;overflow:visible;padding:0;inset:auto}
 body.desk #side .view.on{display:block}
-body.desk .panel{margin-bottom:14px;padding:15px 17px}
+body.desk .panel{margin-bottom:12px;padding:14px 16px}
 body.desk .panel h2{font-size:12px;letter-spacing:2.8px;padding-bottom:7px;margin-bottom:11px}
 body.desk .turno{font-size:15px}
 body.desk .pcard{padding:12px 14px;font-size:13.5px}
@@ -255,7 +255,13 @@ body.desk .help table{min-width:0}
 body.desk .help td, body.desk .help th{padding:6px 7px;font-size:12px}
 body.desk .footer{display:none}
 body.desk .badge{display:none !important}
-body.desk .log{height:clamp(230px,34vh,430px);min-height:0;font-size:12.5px}
+/* o Registro encolhe para as Tabelas caberem inteiras na tela;
+   ele rola por dentro, então nada de registro se perde */
+body.desk .log{height:clamp(150px,19vh,300px);min-height:0;font-size:12.5px}
+/* Tabelas mais compactas: é a última coisa da página e era a que cortava */
+body.desk #pTabelas .help{font-size:13px}
+body.desk #pTabelas table{margin:5px 0 9px}
+body.desk #pTabelas td, body.desk #pTabelas th{padding:5px 6px;font-size:11.5px}
 body.desk #waiting{bottom:14px;left:auto;right:14px;width:auto}
 /* os dados maiores, como no tabuleiro de mesa */
 body.desk #pTurno .die{width:52px;height:52px;border-radius:10px}
