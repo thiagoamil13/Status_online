@@ -222,22 +222,38 @@ body.desk #topInfo{flex:0 0 auto;text-align:right}
 body.desk .tabbar, body.desk .actionbar{display:none}
 
 body.desk .stage{display:flex;flex-direction:row;gap:14px;padding:14px;overflow:hidden}
+/* a largura é calculada no JS para bater com a altura: o tabuleiro é quadrado,
+   e assim não sobra faixa escura de nenhum lado */
 body.desk #boardStage{
-  position:relative;flex:1 1 auto;min-width:0;border:3px solid #17130d;border-radius:6px;
+  position:relative;flex:0 0 auto;min-width:0;border:3px solid #17130d;border-radius:6px;
   box-shadow:0 8px 26px #0007;
 }
+/* metade da tela para os painéis: com menos que isso a tabela da Bolsa
+   fica cortada e os nomes dos jogadores quebram em três linhas */
 body.desk #side{
-  display:flex;flex-direction:row;gap:12px;flex:0 0 clamp(520px,40vw,880px);
+  display:flex;flex-direction:row;gap:14px;flex:1 1 auto;min-width:0;
   overflow:auto;-webkit-overflow-scrolling:touch;padding:0;background:none;border:0;
 }
 body.desk #colA, body.desk #colB{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
 body.desk #side .view{position:static;display:none;overflow:visible;padding:0;inset:auto}
 body.desk #side .view.on{display:block}
-body.desk .panel{margin-bottom:12px}
+body.desk .panel{margin-bottom:14px;padding:15px 17px}
+body.desk .panel h2{font-size:12px;letter-spacing:2.8px;padding-bottom:7px;margin-bottom:11px}
+body.desk .turno{font-size:15px}
+body.desk .pcard{padding:12px 14px;font-size:13.5px}
+body.desk .pcard .row1 .nm{font-size:17px}
+body.desk .pcard .row1 .cash{font-size:19px}
+body.desk .bizrow{font-size:13px;padding:11px 13px}
+body.desk .help{font-size:13.5px}
+body.desk .help table{min-width:0}
+body.desk .help td, body.desk .help th{padding:6px 7px;font-size:12px}
 body.desk .footer{display:none}
 body.desk .badge{display:none !important}
-body.desk .log{height:clamp(230px,34vh,430px);min-height:0}
+body.desk .log{height:clamp(230px,34vh,430px);min-height:0;font-size:12.5px}
 body.desk #waiting{bottom:14px;left:auto;right:14px;width:auto}
+/* os dados maiores, como no tabuleiro de mesa */
+body.desk #pTurno .die{width:52px;height:52px;border-radius:10px}
+body.desk #pTurno .die svg{width:38px;height:38px}
 
 /* as três abas do cartão da direita, como no tabuleiro de mesa */
 body.desk #deskTabs{display:flex;gap:6px;margin-bottom:10px;flex:0 0 auto}
@@ -996,7 +1012,24 @@ function clamp() {
   tx = sz <= b.w ? (b.w - sz) / 2 : Math.min(m, Math.max(b.w - sz - m, tx));
   ty = sz <= b.h ? (b.h - sz) / 2 : Math.min(m, Math.max(b.h - sz - m, ty));
 }
+/* No computador, deixa a área do tabuleiro quadrada — do tamanho da altura
+   disponível — para não sobrar faixa escura dos lados. O que sobra de largura
+   vai para os painéis. Se a janela for baixa e larga, o limite passa a ser a
+   largura, para os painéis nunca ficarem espremidos abaixo do legível. */
+var LADO_MIN_PAINEIS = 560, PAD_STAGE = 28, GAP_STAGE = 14;
+function ajustaColunas() {
+  var bs = $('boardStage');
+  if (!DESK) { bs.style.flexBasis = ''; return; }
+  var st = $('stage').getBoundingClientRect();
+  var alturaUtil = st.height - PAD_STAGE;
+  var larguraUtil = st.width - PAD_STAGE - GAP_STAGE;
+  var lado = Math.min(alturaUtil, larguraUtil - LADO_MIN_PAINEIS);
+  lado = Math.max(320, lado);
+  bs.style.flexBasis = Math.floor(lado) + 'px';
+}
+
 function fit() {
+  ajustaColunas();
   var b = boxOf();
   if (!b.w || !b.h) return;
   scale = Math.max(MINS, Math.min(MAXS, Math.min(b.w, b.h) / BOARD_PX * 0.99));
@@ -1161,7 +1194,14 @@ var HELP_TABELAS = ${JSON.stringify(`<b>Bolsa de Valores</b> (investimento entra
 
 document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
 document.addEventListener('dblclick', function (e) { e.preventDefault(); });
-window.addEventListener('resize', function () { setTimeout(function () { clamp(); apply(); centerOnActive(true); }, 150); });
+window.addEventListener('resize', function () {
+  setTimeout(function () {
+    // no computador a área do tabuleiro muda de tamanho junto com a janela;
+    // no celular só reposiciona, para não jogar fora o zoom que a pessoa deu
+    if (DESK) { ajustaColunas(); fit(); } else { clamp(); apply(); }
+    centerOnActive(true);
+  }, 150);
+});
 setTimeout(function () { var h = $('hint'); if (h) { h.style.opacity = '0'; setTimeout(function () { h.remove(); }, 600); } }, 6500);
 </script>
 </body>
