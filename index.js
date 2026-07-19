@@ -13,6 +13,11 @@ const newCode = () =>
 const html = (body) =>
   new Response(body, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 
+/* Nada de API vai para cache: código de sala sorteado não pode repetir,
+   e o estado da sala muda a cada segundo. */
+const json = (obj, status = 200) =>
+  Response.json(obj, { status, headers: { 'cache-control': 'no-store, no-cache, must-revalidate', 'pragma': 'no-cache' } });
+
 function room(env, code) {
   return env.GAME_ROOM.get(env.GAME_ROOM.idFromName('sala:' + code));
 }
@@ -24,16 +29,18 @@ export default {
 
     if (path === '/health') return new Response('ok');
 
-    // cria uma sala nova e devolve o código
+    // cria uma sala nova e devolve o código.
+    // Só POST: método não-idempotente não é guardado em cache por engano.
     if (path === '/api/new') {
+      if (request.method !== 'POST') return json({ error: 'use POST' }, 405);
       for (let tentativa = 0; tentativa < 8; tentativa++) {
         const code = newCode();
         const r = await room(env, code).fetch(
           new Request(`https://sala/create?code=${code}`, { method: 'POST' })
         );
-        if (r.ok) return Response.json({ code });
+        if (r.ok) return json({ code });
       }
-      return Response.json({ error: 'não consegui criar a sala' }, { status: 500 });
+      return json({ error: 'não consegui criar a sala' }, 500);
     }
 
     // a sala existe?
@@ -42,7 +49,7 @@ export default {
       const code = mExists[1].toUpperCase();
       const r = await room(env, code).fetch(new Request('https://sala/exists'));
       const j = await r.json();
-      return Response.json({ code, ...j });
+      return json({ code, ...j });
     }
 
     // websocket da sala

@@ -230,12 +230,15 @@ export class GameRoom {
   spaceOf(p) { return this.track(p)[p.pos]; }
   online(p) { return !p.human || p.connected; }
 
+  /* O comando da sala é recalculado toda vez que alguém entra, volta ou sai,
+     e só pode recair sobre quem está presente. Se a sala esvazia, fica sem
+     dono — nunca com um fantasma, que travaria a mesa para quem voltasse. */
   reassignHost() {
     const S = this.S;
     const cur = S.hostPid && this.byPid(S.hostPid);
     if (cur && cur.human && cur.connected) return;
     const next = S.players.find((p) => p.human && p.connected);
-    if (next) S.hostPid = next.pid;
+    S.hostPid = next ? next.pid : null;
   }
 
   log(msg, destaque) {

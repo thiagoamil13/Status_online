@@ -241,6 +241,7 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation}
       <p style="font-size:11.5px;color:#6b6350">De 2 a 6 jogadores. Com 2 ou 3, cada um assume dois comércios, como manda o manual.</p>
     </div>
     <p id="lobWait" class="mini" style="text-align:center;color:#6b6350"></p>
+    <button class="btn plain wide" id="btnSairLobby">Sair desta sala</button>
   </div>
 </div>
 
@@ -361,7 +362,7 @@ $('btnCriar').onclick = function () {
   if (!nome) { gateErr('Escreva seu nome primeiro.'); return; }
   gateErr('');
   $('btnCriar').disabled = true;
-  fetch('/api/new').then(function (r) { return r.json(); }).then(function (j) {
+  fetch('/api/new', { method: 'POST', cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
     $('btnCriar').disabled = false;
     if (!j.code) { gateErr('Não consegui criar a sala. Tente de novo.'); return; }
     connect(j.code, nome);
@@ -377,7 +378,7 @@ $('btnEntrar').onclick = function () {
   if (!nome) { gateErr('Escreva seu nome primeiro.'); return; }
   if (!/^[A-Z0-9]{4}$/.test(code)) { gateErr('O código tem 4 caracteres.'); return; }
   gateErr('');
-  fetch('/api/room/' + code).then(function (r) { return r.json(); }).then(function (j) {
+  fetch('/api/room/' + code, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
     if (!j.ok) { gateErr('Não existe sala com esse código.'); return; }
     connect(code, nome);
   }).catch(function () { gateErr('Sem conexão com o servidor.'); });
@@ -467,7 +468,15 @@ $('btnConvite').onclick = function () {
   if (navigator.clipboard) navigator.clipboard.writeText(link).then(done, function () { prompt('Copie o link:', link); });
   else prompt('Copie o link:', link);
 };
-$('btnLeave').onclick = function () { location.href = '/'; };
+/* Sair: sempre volta para a tela inicial, nunca deixa uma tela sem saída.
+   O location.href='/' derruba o socket e limpa o /r/CODE do endereço. */
+function sair(confirmar) {
+  if (confirmar && !confirm('Sair desta sala e voltar para a tela inicial?')) return;
+  try { WS.onclose = null; WS.close(); } catch (e) {}
+  location.href = '/';
+}
+$('btnLeave').onclick = function () { sair(true); };
+$('btnSairLobby').onclick = function () { sair(false); };
 $('btnForce').onclick = function () { sendHost('force'); };
 
 /* ---------------- perguntas do servidor ---------------- */

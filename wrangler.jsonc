@@ -1,7 +1,9 @@
 {
   // STATUS — O Jogo da Ascensão Social, online
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "jogo-status",
+  // precisa bater com o nome do projeto na Cloudflare, senão o build avisa
+  // e a Cloudflare abre um pull request só para corrigir isto
+  "name": "statusonline",
   "main": "index.js",
   "compatibility_date": "2025-05-01",
   "observability": { "enabled": true },
