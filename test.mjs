@@ -66,7 +66,7 @@ const run = async () => {
   const h = await fetch(BASE + '/health');
   ok(h.ok && (await h.text()) === 'ok', '/health responde ok');
 
-  const nova = await (await fetch(BASE + '/api/new')).json();
+  const nova = await (await fetch(BASE + '/api/new', { method: 'POST' })).json();
   ok(/^[A-Z0-9]{4}$/.test(nova.code || ''), 'sala criada com código ' + nova.code);
   const code = nova.code;
 

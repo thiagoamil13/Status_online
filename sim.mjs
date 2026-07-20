@@ -18,6 +18,9 @@ async function salaFake() {
   await new Promise((res) => setTimeout(res, 0));   // deixa o construtor terminar
   r.push = () => {};          // ninguém assistindo
   r.announce = () => {};
+  // no simulador não existem sockets; sem isto a partida pausaria no 1º turno,
+  // que é justamente o comportamento correto quando a sala está vazia
+  r.temPlateia = () => true;
   return r;
 }
 
