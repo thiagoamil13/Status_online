@@ -60,6 +60,24 @@ celular no meio de uma pergunta longa.
 Se o servidor hibernar no meio da partida (todos fecharam o navegador), o estado
 volta do disco quando alguém reconecta — o turno em andamento recomeça do início.
 
+## Apagar uma sala na mão
+
+Sala abandonada some sozinha em 48 horas. Para apagar antes disso, existe uma rota
+protegida:
+
+```
+/admin/limpar?code=JHWH&chave=SEU_SEGREDO
+```
+
+Ela **nasce desligada**: sem a variável `ADMIN_KEY` configurada na Cloudflare
+(Settings → Variables and Secrets, como *Secret*), a rota responde 404 como
+qualquer endereço inexistente. Chave errada também devolve 404, para não confirmar
+que ela existe.
+
+O painel da Cloudflare não serve para isso. O **Data Studio** só enxerga tabelas
+criadas pela API de SQL; como o estado é gravado pela API de chave-valor, a tabela
+interna `_cf_KV` responde `SQLITE_AUTH: access prohibited` até para o dono da conta.
+
 ## Testes
 
 Três baterias, todas contra o código de verdade:

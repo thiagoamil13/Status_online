@@ -52,6 +52,23 @@ export default {
       return json({ code, ...j });
     }
 
+    /* Apaga uma sala pelo código. Nasce desligada: sem o segredo ADMIN_KEY
+       configurado na Cloudflare, a rota responde 404 como qualquer outra.
+       Chave errada devolve 404 também, para não confirmar que ela existe. */
+    if (path === '/admin/limpar') {
+      const segredo = env.ADMIN_KEY;
+      if (!segredo) return new Response('não encontrado', { status: 404 });
+      const dada = url.searchParams.get('chave')
+        || (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+      if (dada !== segredo) return new Response('não encontrado', { status: 404 });
+
+      const code = (url.searchParams.get('code') || '').toUpperCase();
+      if (!/^[A-Z0-9]{4}$/.test(code)) return json({ erro: 'informe ?code=XXXX' }, 400);
+
+      const r = await room(env, code).fetch(new Request('https://sala/wipe', { method: 'POST' }));
+      return json({ code, ...(await r.json()) });
+    }
+
     // websocket da sala
     if (path === '/ws') {
       const code = (url.searchParams.get('code') || '').toUpperCase();

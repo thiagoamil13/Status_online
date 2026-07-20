@@ -20,6 +20,9 @@ const T = {
   announce: 2200,  // aviso sem botão (resultado de dados, etc.)
 };
 
+/* Sala sem ninguém por este tempo é apagada do disco. */
+const ABANDONO_MS = 48 * 60 * 60 * 1000;
+
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const chance = (x) => Math.random() < x;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -57,6 +60,21 @@ export class GameRoom {
       return Response.json({ ok: !!this.S, phase: this.S ? this.S.phase : null });
     }
 
+    /* Apagar a sala por dentro: aqui a permissão existe, ao contrário do
+       Data Studio, que não consegue tocar na tabela interna de chave-valor. */
+    if (url.pathname.endsWith('/wipe')) {
+      const existia = !!this.S;
+      for (const c of this.sockets) {
+        try { c.ws.close(1000, 'sala encerrada pelo administrador'); } catch (_) {}
+      }
+      this.sockets.clear();
+      this.expireAll();
+      this.S = null;
+      this.running = false;
+      await this.state.storage.deleteAll();
+      return Response.json({ ok: true, existia });
+    }
+
     if (url.pathname.endsWith('/ws')) {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return new Response('esperava websocket', { status: 426 });
@@ -81,6 +99,10 @@ export class GameRoom {
     });
     const bye = () => {
       this.sockets.delete(conn);
+      if (this.S) {
+        this.S.ultimoContato = Date.now();
+        if (!this.sockets.size) this.agendaLimpeza();
+      }
       if (conn.pid && this.S) {
         const p = this.byPid(conn.pid);
         const aindaAberto = [...this.sockets].some((c) => c.pid === conn.pid);
@@ -110,9 +132,10 @@ export class GameRoom {
       const pid = String(m.pid || '').slice(0, 60);
       const name = String(m.name || '').trim().slice(0, 18) || 'Jogador';
       if (!pid) return;
-      conn.pid = pid;
       let p = this.byPid(pid);
       if (!p) {
+        // quem é barrado não pode ficar marcado no socket, senão continua
+        // recebendo as transmissões de estado e assiste à partida de fora
         if (S.phase !== 'lobby') {
           this.send(conn.ws, { t: 'denied', reason: 'A partida já começou nesta sala.' });
           return;
@@ -130,6 +153,9 @@ export class GameRoom {
         p.connected = true;
         this.log(`${p.name} voltou.`);
       }
+      conn.pid = pid;              // só agora, depois de aprovado
+      S.ultimoContato = Date.now();
+      await this.agendaLimpeza();
       this.reassignHost();
       await this.save();
       this.send(conn.ws, { t: 'init', board: boardPayload(), code: S.code, you: pid });
@@ -242,12 +268,38 @@ export class GameRoom {
   }
 
   log(msg, destaque) {
+    if (!this.S) return;   // a sala pode ter sido apagada no meio de um turno
     this.S.log.unshift({ m: msg, d: !!destaque, at: Date.now() });
     if (this.S.log.length > 160) this.S.log.length = 160;
   }
 
   async save() {
     if (this.S) await this.state.storage.put('S', clone(this.S));
+  }
+
+  /* Há alguém de carne e osso vendo a partida? Sem isso, a mesa jogaria
+     sozinha até o fim — e numa sala sem bots nunca haveria fim, porque a
+     resposta automática é "não comprar" e ninguém completaria a meta. */
+  temPlateia() {
+    return this.S.players.some((p) => p.human && p.connected);
+  }
+
+  async agendaLimpeza() {
+    try { await this.state.storage.setAlarm(Date.now() + ABANDONO_MS); } catch (_) {}
+  }
+
+  /* Dispara quando a sala passa do tempo de abandono: apaga o estado do disco.
+     Se alguém apareceu nesse meio-tempo, só remarca. */
+  async alarm() {
+    if (!this.S) return;
+    if (this.sockets.size) { await this.agendaLimpeza(); return; }
+    const parado = Date.now() - (this.S.ultimoContato || 0);
+    if (parado >= ABANDONO_MS) {
+      await this.state.storage.deleteAll();
+      this.S = null;
+      return;
+    }
+    try { await this.state.storage.setAlarm(Date.now() + (ABANDONO_MS - parado)); } catch (_) {}
   }
 
   /* ---------------- envio ---------------- */
@@ -1046,6 +1098,11 @@ export class GameRoom {
     try {
       while (this.S && this.S.phase === 'playing' && !this.S.over) {
         await this.save();
+        if (!this.temPlateia()) {
+          this.log('Partida pausada — ninguém na sala. Recomeça quando alguém voltar.');
+          await this.save();
+          break;
+        }
         await this.playTurn();
         if (!this.S || this.S.over) break;
         const w = this.S.players.find((p) => this.winCheck(p));
