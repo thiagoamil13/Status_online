@@ -560,6 +560,10 @@ function showGame() {
 
 /* ---------------- lobby ---------------- */
 function renderLobby() {
+  // ao voltar para o lobby (nova partida), esconde a tela de jogo — senão o
+  // tabuleiro fica aparecendo atrás e a lista do lobby vaza por cima
+  ['topBar', 'stage', 'actionBar', 'tabbar'].forEach(function (id) { $(id).classList.add('hidden'); });
+  showGame.done = false;   // a próxima partida reposiciona o tabuleiro do zero
   $('gate').classList.remove('hidden');
   $('cardEntrar').classList.add('hidden');
   $('cardLobby').classList.remove('hidden');
