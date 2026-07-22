@@ -526,13 +526,22 @@ function sendHost(cmd, extra) {
   WS.send(JSON.stringify(m));
 }
 
-/* ---------------- estado recebido ---------------- */
+/* ---------------- estado recebido ----------------
+   O servidor manda uma atualização a cada casa que o peão anda e a cada
+   linha do registro — dezenas por turno no fim de jogo. Em vez de redesenhar
+   tudo a cada uma, junto as que chegam no mesmo quadro e desenho uma vez só. */
+var _renderAgendado = false;
+function agendarRender() {
+  if (_renderAgendado) return;
+  _renderAgendado = true;
+  requestAnimationFrame(function () { _renderAgendado = false; renderPanels(); });
+}
 function onState(m) {
   if (ST.phase === 'lobby') { renderLobby(); return; }
   showGame();
-  renderPrompt(m.prompt);
+  renderPrompt(m.prompt);      // a pergunta aparece na hora, sem esperar o quadro
   renderWaiting(m.waiting);
-  renderPanels();
+  agendarRender();
 }
 
 function showGame() {
@@ -914,8 +923,24 @@ function drawIcon(sp, cx2, cy2, rot, scale) {
   return '';
 }
 
-function renderBoard() {
+/* O desenho das casas é fixo: só peões, destaque da vez e a lupa mudam.
+   Se nada disso mudou desde a última vez, não vale reconstruir o SVG inteiro —
+   é o que fazia o registro de um leilão redesenhar o tabuleiro à toa. */
+var _boardSig = null;
+function boardSig() {
+  if (!ST || !ST.players) return 'x';
+  var s = (ST.turnPid || '') + '|' + (window.MOBILE_HIDE_LENS ? '1' : '0') + '|' + ST.phase;
+  for (var i = 0; i < ST.players.length; i++) {
+    var p = ST.players[i];
+    s += '|' + p.pid + ',' + p.level + ',' + p.pos + ',' + p.color;
+  }
+  return s;
+}
+function renderBoard(forcar) {
   if (!B) return;
+  var sig = boardSig();
+  if (!forcar && sig === _boardSig) return;   // nada mudou no tabuleiro
+  _boardSig = sig;
   var svg = $('board'), cx = 500, cy = 500;
   var out = '<defs><pattern id="news" width="120" height="120" patternUnits="userSpaceOnUse" patternTransform="rotate(-2)">' +
     '<rect width="120" height="120" fill="#e9dfc0"/>' + NEWSPRINT + '</pattern>' +
