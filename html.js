@@ -335,7 +335,12 @@ body.desk .lobbyRow{font-size:15px;padding:10px 12px}
     <div id="lobPlayers"></div>
     <div id="lobHostBox" class="hidden">
       <label>Meta em dinheiro <input id="inTarget" type="number" min="500" step="500" value="10000"></label>
-      <button class="btn wide" id="btnBot">Adicionar um bot</button>
+      <div style="font-size:12px;font-weight:700;margin:10px 0 5px">Adicionar bot</div>
+      <div id="botBtns" style="display:flex;gap:6px">
+        <button class="btn plain" data-skill="0" style="flex:1;font-size:12px">＋ Fácil</button>
+        <button class="btn" data-skill="1" style="flex:1;font-size:12px">＋ Médio</button>
+        <button class="btn gold" data-skill="2" style="flex:1;font-size:12px">＋ Difícil</button>
+      </div>
       <button class="btn gold wide" id="btnComecar">Começar a partida</button>
       <p style="font-size:11.5px;color:#6b6350">De 2 a 6 jogadores. Com 2 ou 3, cada um assume dois comércios, como manda o manual.</p>
     </div>
@@ -575,10 +580,14 @@ function renderLobby() {
     b.onclick = function () { sendHost('remove', { pid: b.dataset.rm }); };
   });
   $('btnComecar').disabled = ST.players.length < 2;
-  $('btnBot').disabled = ST.players.length >= 6;
+  Array.prototype.forEach.call(document.querySelectorAll('#botBtns button'), function (b) {
+    b.disabled = ST.players.length >= 6;
+  });
 }
 
-$('btnBot').onclick = function () { sendHost('addBot', { skill: 1 }); };
+Array.prototype.forEach.call(document.querySelectorAll('#botBtns button'), function (b) {
+  b.onclick = function () { sendHost('addBot', { skill: +b.dataset.skill }); };
+});
 $('btnComecar').onclick = function () {
   sendHost('target', { value: +$('inTarget').value || 10000 });
   sendHost('start');

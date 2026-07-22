@@ -763,7 +763,7 @@ export class GameRoom {
         body: `<p>Adquira <b>${doc.name}</b> por ${fmt(doc.cost)} — necessário (ou equivalente) para subir de classe.</p>`,
         buttons: [{ label: `Comprar — ${fmt(doc.cost)}`, cls: 'gold', value: true }, { label: 'Não comprar', cls: 'plain', value: false }],
       }, { timeout: T.buy, def: false });
-    } else buy = true;
+    } else buy = this.botBuyDoc(p);
     if (!buy) { this.log(`${p.name} não quis ${doc.name}.`); return; }
     await this.payForPurchase(p, doc.cost, null, doc.name);
     p.docs.push(key);
@@ -892,7 +892,7 @@ export class GameRoom {
           body: `<p>Cotação <b>${sum}</b>: seu investimento de ${fmt(inv.amount)} vale agora <b>${fmt(inv.value)}</b>.</p>`,
           buttons: [{ label: `Retirar ${fmt(inv.value)}`, cls: 'gold', value: true }, { label: 'Manter investido', cls: 'plain', value: false }],
         }, { timeout: T.join, def: false });
-      } else out = this.botBolsaCashOut(inv);
+      } else out = this.botBolsaCashOut(inv, o);
       if (out) {
         o.cash += inv.value;
         S.investments = S.investments.filter((v) => v !== inv);
@@ -996,7 +996,8 @@ export class GameRoom {
       }
     } else {
       await sleep(650);
-      if (this.promotionInfo(p)) await this.doPromotion(p);
+      // Difícil e Médio sobem assim que podem; Fácil às vezes perde a deixa.
+      if (this.promotionInfo(p) && (this.sk(p) > 0 || chance(0.6))) await this.doPromotion(p);
     }
 
     const a = d6(), b = d6(), sum = a + b;
@@ -1125,63 +1126,116 @@ export class GameRoom {
     }
   }
 
-  /* ---------------- bots ---------------- */
-  botReserve(p) { return p.level === 0 ? 15 : p.level === 1 ? 80 : 400; }
+  /* ---------------- bots ----------------
+     skill 0 = Fácil, 1 = Médio, 2 = Difícil. Cada tabela [f, m, d] escala uma
+     decisão. Regra geral: o Difícil guarda mais reserva, corre atrás dos
+     símbolos da alta rumo à vitória, aposta pouco em jogos de sorte e joga
+     forte na Bolsa e nos leilões; o Fácil faz o oposto — gasta por impulso,
+     guarda pouco e arrisca demais. */
+  sk(p) { return Math.max(0, Math.min(2, p.skill ?? 1)); }
+
+  // Crédito custa 10% na Liquidação; a Bolsa rende ~67% por jogada. O bom
+  // jogador paga à vista para não criar dívida e mantém o resto girando na Bolsa.
+  // Por isso o Difícil guarda MENOS reserva ociosa (paga à vista); o Fácil, mais
+  // (empurra no crédito e junta dívida).
+  botReserve(p) {
+    const base = p.level === 0 ? 15 : p.level === 1 ? 80 : 400;
+    return Math.round(base * [1.6, 1, 0.5][this.sk(p)]);
+  }
   botPayMethod(p, price) { return p.cash - price >= this.botReserve(p) ? 'cash' : 'credit'; }
   botWantsLevel(p) { return p.level === 0 ? 0 : 1; }
+
   botBuyChoice(p, idx, levels) {
     if (!levels.length) return { outra: true };
+    const sk = this.sk(p);
+    const need2 = p.symbols.filter((s) => s.level === 2).length < 3;
+    // rumo à vitória: símbolo da alta. Difícil persegue cedo; Fácil quase nunca.
+    const limiarAlta = [Infinity, 900, 350][sk];
+    if (levels.includes(2) && need2 && (p.level === 2 || p.cash > limiarAlta)) return { buy: 2 };
     const minL = this.botWantsLevel(p);
     const missing = 3 - this.usefulSymbols(p, minL).length;
-    if (levels.includes(2) && (p.level === 2 || p.cash > 900) && p.symbols.filter((s) => s.level === 2).length < 3) return { buy: 2 };
     if (missing > 0) {
       const useful = levels.filter((L) => L >= minL);
       if (useful.length) {
-        const L = useful[0];
-        if (SYMBOL_PRICE[L] <= p.cash + 250) return { buy: L };
+        // Difícil pega a classe mais alta que puder; Fácil e Médio, a mais barata.
+        const L = sk === 2 ? useful[useful.length - 1] : useful[0];
+        const folga = [70, 250, 500][sk];
+        if (SYMBOL_PRICE[L] <= p.cash + folga) return { buy: L };
       }
+    }
+    // Fácil compra símbolo por impulso mesmo sem precisar
+    if (sk === 0 && chance(0.35)) {
+      const baratos = levels.filter((L) => SYMBOL_PRICE[L] <= p.cash);
+      if (baratos.length) return { buy: baratos[0] };
     }
     return { outra: true };
   }
+
+  botBuyDoc(p) {
+    // Difícil e Médio sempre compram o documento (precisam para subir);
+    // Fácil às vezes deixa passar e trava a própria ascensão.
+    return this.sk(p) > 0 || chance(0.7);
+  }
+
   botBid(b, asset) {
     const need = asset.kind === 'symbol'
       ? (this.usefulSymbols(b, this.botWantsLevel(b)).length < 3 && asset.level >= this.botWantsLevel(b))
-        || (asset.level === 2 && b.symbols.filter((s) => s.level === 2).length < 3 && b.cash > 600)
+        || (asset.level === 2 && b.symbols.filter((s) => s.level === 2).length < 3 && b.cash > 500)
       : !this.hasDocTier(b, DOCS[asset.doc].tier);
-    const greed = [0.85, 1, 1.15][b.skill ?? 1];
-    if (!need && !chance(0.25)) return 0;
+    const sk = this.sk(b);
+    const greed = [0.7, 1, 1.3][sk];
+    // Difícil dá lance mesmo sem precisar, para tomar do adversário; Fácil raramente.
+    const chuteAtoa = [0.1, 0.25, 0.4][sk];
+    if (!need && !chance(chuteAtoa)) return 0;
     const factor = (need ? (0.75 + Math.random() * 0.45) : (0.2 + Math.random() * 0.3)) * greed;
     return Math.max(0, Math.min(b.cash, Math.round(asset.base * factor)));
   }
+
   botPickAsset(p) {
     const assets = this.assetsOf(p).filter((a) => !(p._skipAsset && p._skipAsset[a.key]));
+    // Difícil sacrifica o bem mais barato/menos útil; Fácil larga qualquer um.
+    if (this.sk(p) === 0) return assets[Math.floor(Math.random() * assets.length)];
     assets.sort((a, b) => a.base - b.base);
     return assets[0];
   }
+
   botJockeyInit(p) {
-    if (!chance(0.35) || p.cash < 2) return null;
+    const sk = this.sk(p);
+    if (!chance([0.55, 0.35, 0.15][sk]) || p.cash < 2) return null;
     const horses = [6, 7, 8, 5, 9, 2, 12, 3, 11, 4, 10];
-    const horse = chance(0.7) ? horses[Math.floor(Math.random() * 5)] : 2 + Math.floor(Math.random() * 11);
+    // Difícil aposta nos cavalos de meio (mais prováveis); Fácil chuta nos extremos.
+    const horse = chance([0.4, 0.7, 0.9][sk]) ? horses[Math.floor(Math.random() * 5)] : 2 + Math.floor(Math.random() * 11);
     const cap = [30, 150, 600][p.level];
-    const stake = Math.max(1, Math.min(p.cash, cap, Math.round(p.cash * 0.06)));
+    const stake = Math.max(1, Math.min(p.cash, cap, Math.round(p.cash * [0.12, 0.06, 0.04][sk])));
     return { horse, stake };
   }
   botJockeyJoin(o) {
-    if (!chance(0.25) || o.cash < 2) return 0;
-    return Math.max(1, Math.min(o.cash, Math.round(o.cash * 0.04)));
+    const sk = this.sk(o);
+    if (!chance([0.45, 0.25, 0.12][sk]) || o.cash < 2) return 0;
+    return Math.max(1, Math.min(o.cash, Math.round(o.cash * [0.08, 0.04, 0.03][sk])));
   }
+
+  // A Bolsa é a única jogada claramente lucrativa (rende ~67% por rodada).
+  // Difícil despeja quase tudo o que sobra; Fácil quase não usa.
   botBolsaInvest(p, max) {
-    if (!chance(0.45)) return 0;
-    return Math.max(10, Math.min(max, Math.round(p.cash * 0.15 / 10) * 10));
+    const sk = this.sk(p);
+    if (!chance([0.3, 0.5, 0.9][sk])) return 0;
+    return Math.max(10, Math.min(max, Math.round(p.cash * [0.08, 0.15, 0.45][sk] / 10) * 10));
   }
-  botBolsaCashOut(inv) {
-    if (inv.value >= inv.amount * 1.5) return true;
+  // Como a cotação é reavaliada a cada rodada e pode zerar (soma 2), o Difícil
+  // trava o lucro cedo (a partir de +30%); o Fácil fica ganancioso e arrisca perder.
+  botBolsaCashOut(inv, o) {
+    const sk = this.sk(o || { skill: 1 });
+    const alvo = [1.7, 1.5, 1.3][sk];
+    if (inv.value >= inv.amount * alvo) return true;
     if (inv.rounds >= this.S.players.length - 2 && inv.value >= inv.amount) return true;
-    return chance(0.12);
+    return chance([0.3, 0.12, 0.04][sk]);
   }
+
   botLoteriaInit(p) {
-    if (!chance(0.3) || p.cash < 2) return 0;
-    return Math.max(1, Math.min(p.cash, [20, 100, 400][p.level], Math.round(p.cash * 0.03)));
+    const sk = this.sk(p);
+    if (!chance([0.5, 0.3, 0.12][sk]) || p.cash < 2) return 0;
+    return Math.max(1, Math.min(p.cash, [20, 100, 400][p.level], Math.round(p.cash * [0.06, 0.03, 0.02][sk])));
   }
-  botLoteriaJoin(o, stake) { return stake <= o.cash * 0.08; }
+  botLoteriaJoin(o, stake) { return stake <= o.cash * [0.14, 0.08, 0.05][this.sk(o)]; }
 }
