@@ -804,12 +804,14 @@ function renderPanels() {
     var docs = p.docs.map(function (k) { return '<span class="chip doc">' + B.DOCS[k].name + '</span>'; }).join('');
     var act = p.pid === ST.turnPid;
     var cls = CLASS_SHORT_UP(p.level);
-    var selo = p.human ? '' : ' <small style="font-size:10.5px;color:#6b6350;font-weight:600">🤖 ' + ['fácil', 'médio', 'difícil'][p.skill == null ? 1 : p.skill] + '</small>';
+    // o nível do bot vai na linha de informações (tem espaço nos dois formatos),
+    // e não junto do nome, onde no PC disputava espaço com o valor e sumia
+    var seloBot = p.human ? '' : '🤖 ' + ['fácil', 'médio', 'difícil'][p.skill == null ? 1 : p.skill] + ' · ';
     return '<div class="pcard ' + (act ? 'active ' : '') + (p.human && !p.connected ? 'off' : '') + '" style="--pc:' + p.color + '">' +
-      '<div class="row1"><span class="nm">' + esc(p.name) + selo +
+      '<div class="row1"><span class="nm">' + esc(p.name) +
       (p.human && !p.connected ? ' <small style="font-size:11px;color:#a33">offline</small>' : '') +
       '</span><span class="cash">' + fmt(p.cash) + '</span></div>' +
-      '<div class="muted">' + cls + ' · dívida ' + fmt(p.debt) + ' · ' +
+      '<div class="muted">' + seloBot + cls + ' · dívida ' + fmt(p.debt) + ' · ' +
       (p.businesses.map(function (b) { return B.BIZ[b].name; }).join(', ') || '—') +
       (inv ? ' · Bolsa ' + fmt(inv.value) : '') + (p.skip > 0 ? ' · perde a vez' : '') + '</div>' +
       '<div class="chips">' + chips + docs + '</div></div>';
