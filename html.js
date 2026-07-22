@@ -568,8 +568,9 @@ function renderLobby() {
   $('lobHostBox').classList.toggle('hidden', !eu);
   $('lobWait').textContent = eu ? '' : 'Esperando o anfitrião começar a partida.';
   $('lobHint').textContent = 'Quem receber o link só precisa digitar o nome.';
+  var nivelBot = ['🤖 fácil', '🤖 médio', '🤖 difícil'];
   $('lobPlayers').innerHTML = ST.players.map(function (p) {
-    var tag = p.human ? (p.connected ? 'na sala' : 'desconectado') : 'bot';
+    var tag = p.human ? (p.connected ? 'na sala' : 'desconectado') : nivelBot[p.skill == null ? 1 : p.skill];
     var host = p.pid === ST.hostPid ? ' · anfitrião' : '';
     var rm = (eu && p.pid !== ST.hostPid)
       ? '<button class="btn red" style="min-height:34px;padding:0 10px;font-size:11px" data-rm="' + p.pid + '">tirar</button>' : '';
@@ -799,8 +800,9 @@ function renderPanels() {
     var docs = p.docs.map(function (k) { return '<span class="chip doc">' + B.DOCS[k].name + '</span>'; }).join('');
     var act = p.pid === ST.turnPid;
     var cls = CLASS_SHORT_UP(p.level);
+    var selo = p.human ? '' : ' <small style="font-size:10.5px;color:#6b6350;font-weight:600">🤖 ' + ['fácil', 'médio', 'difícil'][p.skill == null ? 1 : p.skill] + '</small>';
     return '<div class="pcard ' + (act ? 'active ' : '') + (p.human && !p.connected ? 'off' : '') + '" style="--pc:' + p.color + '">' +
-      '<div class="row1"><span class="nm">' + esc(p.name) + (p.human ? '' : ' 🤖') +
+      '<div class="row1"><span class="nm">' + esc(p.name) + selo +
       (p.human && !p.connected ? ' <small style="font-size:11px;color:#a33">offline</small>' : '') +
       '</span><span class="cash">' + fmt(p.cash) + '</span></div>' +
       '<div class="muted">' + cls + ' · dívida ' + fmt(p.debt) + ' · ' +
@@ -830,7 +832,7 @@ function renderPanels() {
   } else {
     var p = playerByPid(ST.turnPid);
     if (p) {
-      t.innerHTML = '<b>Vez de ' + esc(p.name) + '</b>' + (p.human ? '' : ' (bot)') + '<br>' +
+      t.innerHTML = '<b>Vez de ' + esc(p.name) + '</b>' + (p.human ? '' : ' 🤖 ' + ['fácil', 'médio', 'difícil'][p.skill == null ? 1 : p.skill]) + '<br>' +
         CLASS_SHORT_UP(p.level) + ' · ' + fmt(p.cash) + ' · dívida ' + fmt(p.debt) +
         '<br><span style="font-size:11px;color:#6b6350">Meta: ' + fmt(ST.target) + ' + 3 símbolos da alta + dívida zero</span>';
     }

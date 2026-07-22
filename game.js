@@ -23,6 +23,19 @@ const T = {
 /* Sala sem ninguém por este tempo é apagada do disco. */
 const ABANDONO_MS = 48 * 60 * 60 * 1000;
 
+/* Nomes dos bots, sorteados sem repetir na mesma mesa. */
+const BOT_NAMES = [
+  'Patrão', 'Chefinho', 'Magnata', 'Milionário', 'Barão', 'Empresário',
+  'Investidor', 'Agiota', 'Banqueiro', 'Playboy', 'Boyzinho', 'Ostentação',
+  'Ricaço', 'Endinheirado', 'Mão de Ouro', 'Pé de Meia', 'Mão Fechada',
+  'Mão de Vaca', 'Pão-Duro', 'Muquirana', 'Rei do Pix', 'Dono do Pix',
+  'Homem do Dinheiro', 'Rei do Ouro', 'Rei do Gado', 'Dono da Firma',
+  'Dono do Morro', 'Dono da Banca', 'Chefe da Firma', 'Patrão da Firma',
+  'Juninho do Pix', 'Jorginho Patrão', 'Paulinho Milionário', 'Zé do Ouro',
+  'Nando Magnata', 'Marcão Empresário', 'Betinho da Firma', 'Toninho do Caixa',
+  'Carlinhos Ostentação', 'Gil do Dinheiro',
+];
+
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const chance = (x) => Math.random() < x;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -188,12 +201,13 @@ export class GameRoom {
     const S = this.S;
     if (m.cmd === 'addBot' && S.phase === 'lobby' && S.players.length < 6) {
       const n = S.players.filter((p) => !p.human).length + 1;
-      const skill = Math.max(0, Math.min(2, +m.skill || 1));
-      const nm = ['Bot Fácil', 'Bot Médio', 'Bot Difícil'][skill] + ' ' + n;
+      // atenção: skill 0 (fácil) é válido — não usar "|| 1", que trata 0 como vazio
+      const skill = Math.max(0, Math.min(2, Number.isFinite(+m.skill) ? Math.round(+m.skill) : 1));
+      const nm = this.nomeBotLivre();
       const b = this.newPlayer('bot:' + Date.now() + ':' + n, nm, false);
       b.skill = skill;
       S.players.push(b);
-      this.log(`${nm} entrou na mesa.`);
+      this.log(`${nm} (${['fácil', 'médio', 'difícil'][skill]}) entrou na mesa.`);
     }
     if (m.cmd === 'remove' && S.phase === 'lobby') {
       const i = S.players.findIndex((p) => p.pid === m.pid);
@@ -248,6 +262,16 @@ export class GameRoom {
       color: PLAYER_COLORS[0], cash: 20, debt: 0, level: 0, pos: 0,
       businesses: [], symbols: [], docs: [], skip: 0, suspended: false, _skipAsset: {},
     };
+  }
+
+  /* Sorteia um nome de bot que ninguém na mesa esteja usando. */
+  nomeBotLivre() {
+    const usados = new Set(this.S.players.map((p) => p.name));
+    const livres = BOT_NAMES.filter((nm) => !usados.has(nm));
+    const fonte = livres.length ? livres : BOT_NAMES;
+    let nm = fonte[Math.floor(Math.random() * fonte.length)];
+    while (usados.has(nm)) nm += ' II';   // salvaguarda se a lista esgotar
+    return nm;
   }
 
   byPid(pid) { return this.S.players.find((p) => p.pid === pid); }
