@@ -301,10 +301,12 @@ body.desk .lobbyRow{font-size:15px;padding:10px 12px}
   .choices{flex-direction:row;flex-wrap:wrap}
   .choices .btn{flex:1 1 220px}
 }
-@media(min-width:1100px){
-  body.desk .players{grid-template-columns:1fr 1fr}
-  body.desk .bizlist{grid-template-columns:1fr 1fr}
-}
+/* Os cartões da coluna da direita ficam empilhados: a coluna é estreita demais
+   para duas colunas de cartão — em duas, o segundo cartão saía pela borda. */
+body.desk .players, body.desk .bizlist{grid-template-columns:1fr}
+body.desk .pcard{min-width:0;overflow:hidden}
+body.desk .pcard .row1 .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+body.desk .pcard .chip{max-width:100%}
 </style>
 </head>
 <body>
